@@ -7,12 +7,12 @@ import (
 )
 
 type Flag struct {
-	ReadFlag bool
+	readFlag bool
 }
 
 func (f *Flag) parseFlag(fs *flag.FlagSet) error {
 
-	fs.BoolVar(&f.ReadFlag, "f", false, "Read DataBase file")
+	fs.BoolVar(&f.readFlag, "f", false, "Read DataBase file")
 
 	err := fs.Parse(os.Args[1:])
 
@@ -35,7 +35,7 @@ func (f *Flag) ParseCommandLine() string {
 		os.Exit(1)
 	}
 
-	if f.ReadFlag {
+	if f.readFlag {
 		if fs.NArg() > 0 {
 			path = fs.Arg(0)
 		} else {

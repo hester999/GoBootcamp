@@ -2,50 +2,97 @@ package main
 
 import (
 	"day1/pkg"
+	"encoding/json"
+	"encoding/xml"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 )
 
 type DBReader interface {
-	Read(path string)
+	Read(path string, recipes Recipes) (*Recipes, error)
 }
 
-//func ReadDateBase(DbReader DBReader, path string) {
-//	DBReader.Read()
-//}
+type JsonReader struct {
+}
+
+type XmlReader struct{}
 
 type Recipes struct {
-	Cake []struct {
-		Name        string `json:"name"`
-		Time        string `json:"time"`
-		Ingredients []struct {
-			IngredientName  string  `json:"ingredient_name"`
-			IngredientCount string  `json:"ingredient_count"`
-			IngredientUnit  *string `json:"ingredient_unit,omitempty"`
-		} `json:"ingredients"`
-	} `json:"cake"`
+	Cake []Cake `json:"cake" xml:"cake"`
 }
 
-func (j Recipes) Read(path string) {
-
+type Cake struct {
+	Name        string       `json:"name" xml:"name"`
+	Time        string       `json:"time" xml:"time"`
+	Ingredients []Ingredient `json:"ingredients" xml:"ingredients>ingredient"`
 }
 
-func GetExpansion(path string) string {
-	var res string
-	for i, k := range path {
-		if k == '.' {
-			res = path[i+1:]
-		}
+type Ingredient struct {
+	IngredientName  string  `json:"ingredient_name" xml:"name"`
+	IngredientCount string  `json:"ingredient_count" xml:"count"`
+	IngredientUnit  *string `json:"ingredient_unit,omitempty" xml:"unit,omitempty"`
+}
+
+func (j *JsonReader) Read(path string, recipes Recipes) (*Recipes, error) {
+	extension := filepath.Ext(path)
+
+	if extension != ".json" {
+		fmt.Println("Not a JSON file")
+		os.Exit(1)
 	}
 
-	return res
+	file, err := os.Open(path)
+
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	data, err := io.ReadAll(file)
+
+	if err != nil {
+		return nil, fmt.Errorf("Error reading the file: %v", err)
+	}
+
+	err = json.Unmarshal(data, &recipes)
+	if err != nil {
+		return nil, err
+	}
+	return &recipes, nil
+}
+
+func (x *XmlReader) Read(path string, recipes Recipes) (*Recipes, error) {
+	extension := filepath.Ext(path)
+
+	if extension != ".xml" {
+		fmt.Println("Not a JSON file")
+		os.Exit(1)
+	}
+
+	file, err := os.Open(path)
+
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading the file: %v", err)
+	}
+	err = xml.Unmarshal(data, &recipes)
+
+	if err != nil {
+		return nil, err
+	}
+	return &recipes, nil
 }
 
 func main() {
 	flag := pkg.Flag{}
-	var JsonReader DBReader = RecipesJson{}
-	path := flag.ParseCommandLine()
-	JsonReader.Read(path)
-	test := GetExpansion(path)
-	fmt.Println(test)
+	str := flag.ParseCommandLine()
+	reader := &XmlReader{}
+	recipes, _ := reader.Read(str, Recipes{})
+	fmt.Println(recipes)
 
 }
